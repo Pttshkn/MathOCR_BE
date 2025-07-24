@@ -1,0 +1,475 @@
+/* ======= Базовые переменные ======= */
+:root {
+    /* Светлая тема */
+    --primary: #3366ff;
+    --primary-hover: #2952cc;
+    --background: #f8fafc;
+    --card-bg: #ffffff;
+    --text: #1e293b;
+    --text-secondary: #64748b;
+    --border: #e2e8f0;
+    --border-radius: 12px;
+    --result-bg: #f1f5f9;
+    --scrollbar-thumb: #cbd5e1;
+    --scrollbar-track: #f1f5f9;
+    --error: #ff4757;
+    --success: #4BB543;
+}
+
+[data-theme="dark"] {
+    /* Тёмная тема */
+    --primary: #5d8aff;
+    --primary-hover: #4a7cff;
+    --background: #0f172a;
+    --card-bg: #1e293b;
+    --text: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --border: #334155;
+    --result-bg: #334155;
+    --scrollbar-thumb: #475569;
+    --scrollbar-track: #1e293b;
+}
+
+/* ======= Анимации ======= */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 1; }
+    100% { opacity: 1; }
+}
+
+.copied-state {
+    border-color: var(--success) !important;
+    color: var(--success) !important;
+    transition: all 0.4s ease;
+}
+
+/* ======= Базовые стили ======= */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--background);
+    color: var(--text);
+    line-height: 1.6;
+    transition: background 0.3s, color 0.3s;
+}
+
+/* ======= Полоса прокрутки ======= */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+}
+
+/* ======= Контейнер ======= */
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ======= Шапка ======= */
+.header {
+    margin-bottom: 1.5rem;
+    animation: fadeIn 0.6s ease-out;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.logo-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.logo-group h1 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    background: linear-gradient(90deg, var(--primary), #6b46c1);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin-top: 0.5rem;
+}
+
+.icon-primary {
+    color: var(--primary);
+    font-size: 1.5rem;
+    transition: transform 0.3s;
+}
+
+.icon-primary:hover {
+    transform: rotate(-15deg);
+}
+
+/* ======= Карточка ======= */
+.card {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border);
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* ======= Область загрузки ======= */
+.upload-area {
+    text-align: center;
+    padding: 2rem 1rem;
+    border: 2px dashed var(--border);
+    border-radius: var(--border-radius);
+    transition: all 0.3s;
+    cursor: pointer;
+}
+
+.upload-area:hover {
+    border-color: var(--primary);
+    background: rgba(51, 102, 255, 0.05);
+}
+
+.upload-area.drag-over {
+    background: rgba(51, 102, 255, 0.1) !important;
+    transform: scale(1.02);
+}
+
+.upload-area:focus-within {
+    box-shadow: 0 0 0 3px rgba(51, 102, 255, 0.2);
+}
+
+.upload-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--primary);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.upload-button:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+}
+
+.upload-button i {
+    font-size: 1.1rem;
+    transition: transform 0.3s;
+}
+
+.upload-button:hover i {
+    transform: translateY(-2px);
+}
+
+.upload-hint {
+    margin-top: 0.75rem;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+/* ======= Область предпросмотра ======= */
+.preview-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.image-container {
+    position: relative;
+    display: inline-block;
+    border-radius: 8px;
+    padding: 4px;
+    background: linear-gradient(135deg, var(--primary), #6b46c1);
+    background-size: 200% 200%;
+    animation: gradientShift 4s ease infinite;
+    max-width: 100%;
+}
+
+#preview {
+    display: block;
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 6px;
+    background: white;
+}
+
+.remove-image-btn {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--error);
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+}
+
+.remove-image-btn:hover {
+    background: #ff6b81;
+    transform: rotate(90deg);
+}
+
+#draw-area {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: none;
+    background: var(--result-bg);
+}
+
+/* ======= Кнопки ======= */
+.primary-btn, .secondary-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.875rem;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.primary-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+}
+
+.primary-btn:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.secondary-btn {
+    background: transparent;
+    border: 2px solid var(--primary);
+    color: var(--primary);
+    margin-top: 1rem;
+}
+
+.secondary-btn:hover {
+    background: rgba(51, 102, 255, 0.1);
+}
+
+button:active {
+    transform: scale(0.98) !important;
+}
+
+/* ======= Область результата ======= */
+.result-area {
+    margin-top: 1rem;
+    animation: fadeIn 0.4s ease-out;
+}
+
+.result-area h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+    color: var(--primary);
+}
+
+.latex-output {
+    font-family: 'Fira Code', monospace;
+    background: var(--result-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    transition: all 0.3s;
+}
+
+.latex-output:hover {
+    box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+/* ======= Переключатель темы ======= */
+.theme-switch {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: relative;
+    width: 50px;
+    height: 24px;
+    background: var(--border);
+    border-radius: 24px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.circle {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: var(--primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s, background 0.3s;
+}
+
+.circle i {
+    font-size: 0.7rem;
+    color: white;
+    position: absolute;
+    transition: opacity 0.3s;
+}
+
+.circle .fa-moon {
+    opacity: 1;
+}
+
+.circle .fa-sun {
+    opacity: 0;
+}
+
+.theme-switch input:checked + .slider .circle {
+    transform: translateX(26px);
+}
+
+.theme-switch input:checked + .slider .fa-moon {
+    opacity: 0;
+}
+
+.theme-switch input:checked + .slider .fa-sun {
+    opacity: 1;
+}
+
+/* ======= Лоадер и сообщения ======= */
+.loader {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+.error-message {
+    color: var(--error);
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+    display: none;
+    animation: fadeIn 0.3s;
+}
+
+.copied-feedback {
+    animation: bounce 0.5s ease;
+    color: var(--success) !important;
+}
+
+/* ======= Мобильная адаптация ======= */
+@media (max-width: 600px) {
+    .container {
+        padding: 1rem;
+    }
+
+    .card {
+        padding: 1.25rem;
+        gap: 1rem;
+    }
+
+    .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .theme-switch {
+        align-self: flex-end;
+        margin-top: 0.5rem;
+    }
+
+    .upload-area {
+        padding: 1.5rem 1rem;
+    }
+
+    .upload-button {
+        padding: 0.6rem 1.2rem;
+    }
+
+    .primary-btn, .secondary-btn {
+        padding: 0.75rem;
+    }
+}

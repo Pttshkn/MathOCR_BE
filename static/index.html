@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Распознавание формул</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <div class="logo-group">
+                    <i class="fas fa-square-root-alt icon-primary"></i>
+                    <h1>MathOCR</h1>
+                </div>
+                <label class="theme-switch">
+
+                    <input type="checkbox" id="theme-toggle">
+                    <span class="slider">
+                        <span class="circle">
+                            <i class="fas fa-moon"></i>
+                            <i class="fas fa-sun"></i>
+                        </span>
+                    </span>
+                </label>
+            </div>
+            <p class="subtitle">Загрузите рукописную формулу</p>
+        </header>
+
+        <main class="card">
+            <div class="upload-hint">
+                <p>Загрузите изображение рукописной математической формулы для распознавания.</p>
+                <p>Чем больше разрешение, тем лучше качество распознавания.</p>
+            <div style="height: 2em;"></div>
+            <div class="upload-area" id="drop-zone">
+                <input type="file" id="file-upload" accept="image/*" hidden>
+                <label for="file-upload" class="upload-button">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <span>Выбрать файл</span>
+                </label>
+                <p class="upload-hint">или перетащите изображение</p>
+            </div>
+
+            <div style="height: 2em;"></div>
+
+            <div class="preview-area">
+                
+                <div class="image-container" style="display: none;">
+                    <img id="preview" src="" alt="Предпросмотр">
+                    <button class="remove-image-btn" title="Удалить изображение">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <canvas id="draw-area" width="400" height="200"></canvas>
+            </div>
+
+            <div style="height: 2em;"></div>
+
+            <button id="recognize-btn" class="primary-btn">
+                <i class="fas fa-robot"></i>
+                <span>Распознать</span>
+            </button>
+
+            <div class="result-area">
+                <h3><i class="fas fa-code"></i> Результат:</h3>
+                <div id="result" class="latex-output">
+                    $$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$
+                </div>
+                <button id="copy-btn" class="secondary-btn">
+                    <i class="far fa-copy"></i>
+                    <span>Копировать LaTeX</span>
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
