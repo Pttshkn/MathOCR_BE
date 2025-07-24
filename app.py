@@ -1,10 +1,12 @@
 import os
+import uuid
 from flask import Flask, request, jsonify
 from formula_recognizer import FormulaRecognizer
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # Ограничение 5MB
 
-# Инициализация модели при запуске
+# Инициализация модели
 recognizer = FormulaRecognizer("model/crnn_model.pth")
 
 @app.route('/')
@@ -15,24 +17,41 @@ def home():
 def recognize_formula():
     # Проверка наличия файла
     if 'file' not in request.files:
-        return jsonify({"error": "No file part"}), 400
+        return jsonify({"error": "Файл не найден в запросе"}), 400
     
     file = request.files['file']
+    
+    # Проверка имени файла
     if file.filename == '':
-        return jsonify({"error": "No selected file"}), 400
+        return jsonify({"error": "Не выбран файл"}), 400
     
-    # Сохранение временного файла
-    temp_path = f"temp_{file.filename}"
-    file.save(temp_path)
-    
+    # Проверка расширения файла
+    allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
+    if '.' not in file.filename or file.filename.split('.')[-1].lower() not in allowed_extensions:
+        return jsonify({"error": "Неподдерживаемый формат файла"}), 400
+
     try:
-        # Распознавание формулы
+        # Генерируем уникальное имя файла
+        temp_filename = f"temp_{uuid.uuid4().hex}.png"
+        temp_path = os.path.join('/tmp', temp_filename)
+        
+        # Сохраняем файл
+        file.save(temp_path)
+        
+        # Распознаем формулу
         latex_result = recognizer.recognize(temp_path)
-        return jsonify({"result": latex_result})
+        
+        return jsonify({
+            "result": latex_result,
+            "filename": file.filename
+        })
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "error": f"Ошибка обработки: {str(e)}",
+            "type": type(e).__name__
+        }), 500
     finally:
-        # Удаление временного файла
+        # Удаляем временный файл
         if os.path.exists(temp_path):
             os.remove(temp_path)
 
