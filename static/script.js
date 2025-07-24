@@ -162,22 +162,32 @@ document.getElementById('recognize-btn').addEventListener('click', async functio
     // Показываем лоадер
     this.innerHTML = '<div class="loader"></div> Обработка...';
     this.disabled = true;
+    errorMessage.style.display = 'none';  // Скрываем предыдущие ошибки
 
     try {
-        // Здесь будет реальный запрос к API
-        // const response = await fetch('API_URL', { method: 'POST', body: formData });
-        // const result = await response.json();
+        // Создаем форму для отправки
+        const formData = new FormData();
+        formData.append('file', fileUpload.files[0]);
         
-        // Имитация задержки для демонстрации
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Отправляем на сервер
+        const response = await fetch('https://mathocr-backend.onrender.com/recognize', {
+            method: 'POST',
+            body: formData
+        });
         
-        // В реальном коде используйте результат из API:
-        // document.getElementById('result').textContent = `$${result.latex}$`;
-        // MathJax.typeset();
+        const data = await response.json();
         
-        alert('Функция распознавания будет реализована в бэкенде');
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        // Показываем результат
+        document.getElementById('result').textContent = data.result;
+        
+        // Обновляем MathJax для отображения формулы
+        MathJax.typeset();
     } catch (error) {
-        errorMessage.textContent = '❌ Ошибка при распознавании';
+        errorMessage.textContent = '❌ ' + error.message;
         errorMessage.style.display = 'block';
     } finally {
         this.innerHTML = '<i class="fas fa-robot"></i> Распознать';
