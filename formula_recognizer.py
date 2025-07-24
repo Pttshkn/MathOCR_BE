@@ -10,6 +10,9 @@ from torchvision import transforms
 from PIL import Image, ImageDraw
 import xml.etree.ElementTree as ET
 from tqdm import tqdm
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import io
 
 # Для корректного импорта в облачной среде
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -18,6 +21,13 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 DATASET_ROOT = "Dataset"
 MODEL_PATH = "crnn_model.pth"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Инициализация Flask приложения
+app = Flask(__name__)
+CORS(app)  # Разрешить кросс-доменные запросы
+
+# Ограничение размера загружаемых файлов (2MB)
+app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024
 
 def parse_inkml(inkml_path):
     """Загрузка и парсинг INKML файла с расширенными проверками"""
@@ -360,39 +370,79 @@ class FormulaRecognizer:
         self.model.load_state_dict(checkpoint['state_dict'])
         self.model.eval()
 
-    def recognize(self, image_path):
+        def recognize(self, image_path):
         img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
         if img is None:
             return "Ошибка загрузки изображения"
+            
+            # Бинаризация и нормализация
+            _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+            img_tensor = torch.from_numpy(binary.astype(np.float32) / 255.0
+            img_tensor = (img_tensor.unsqueeze(0).unsqueeze(0) - 0.5) / 0.5
+            
+            # Подаем в модель
+            with torch.no_grad():
+                outputs = self.model(img_tensor.to(DEVICE))
+                probs = outputs.log_softmax(2).exp()
+                _, preds = torch.max(probs, 2)
+                pred_str = ''.join([self.char_set[i] for i in preds[0].cpu().numpy() 
+                                  if i != len(self.char_set)-1])
+                pred_str = ''.join([c for i,c in enumerate(pred_str) 
+                                  if i==0 or c!=pred_str[i-1]])
+            
+            return pred_str if pred_str else "<Пустое предсказание>"
         
-        # Предобработка изображения
-        _, binary = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-        img_tensor = torch.from_numpy(binary.astype(np.float32) / 255.0)
-        img_tensor = (img_tensor.unsqueeze(0).unsqueeze(0) - 0.5) / 0.5
+        except Exception as e:
+            print(f"Ошибка распознавания: {str(e)}")
+            return f"Ошибка: {str(e)}"
+
+# Инициализация распознавателя при запуске
+recognizer = FormulaRecognizer(MODEL_PATH)
+
+@app.route('/recognize', methods=['POST'])
+def handle_recognize():
+    """Обработка запроса на распознавание"""
+    # Проверка наличия файла в запросе
+    if 'file' not in request.files:
+        return jsonify({'error': 'Файл не предоставлен'}), 400
+    
+    file = request.files['file']
+    
+    # Проверка имени файла
+    if file.filename == '':
+        return jsonify({'error': 'Не выбрано изображение'}), 400
+    
+    # Проверка формата файла
+    if not allowed_file(file.filename):
+        return jsonify({'error': 'Недопустимый формат файла. Разрешены: png, jpg, jpeg'}), 400
+    
+    try:
+        # Чтение изображения в память
+        img_bytes = file.read()
         
-        # Подаем в модель
-        with torch.no_grad():
-            outputs = self.model(img_tensor.to(DEVICE))
-            probs = outputs.log_softmax(2).exp()
-            _, preds = torch.max(probs, 2)
-            pred_str = ''.join([self.char_set[i] for i in preds[0].cpu().numpy() 
-                              if i != len(self.char_set)-1])
-            pred_str = ''.join([c for i,c in enumerate(pred_str) 
-                              if i==0 or c!=pred_str[i-1]])
+        # Конвертация в numpy array
+        nparr = np.frombuffer(img_bytes, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         
-        return pred_str if pred_str else "<Пустое предсказание>"
+        # Распознавание формулы
+        result = recognizer.recognize(img)
+        return jsonify({'result': result})
+    
+    except Exception as e:
+        return jsonify({'error': f'Ошибка обработки: {str(e)}'}), 500
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Проверка работоспособности сервера"""
+    return jsonify({'status': 'active', 'device': str(DEVICE)})
 
 if __name__ == "__main__":
-    MODE = "recognize"  # Или "train"
+    # Режим работы: обучение или запуск сервера
+    MODE = "recognize"  # "train" или "recognize"
+    
     if MODE == "train":
+        print("Запуск обучения модели...")
         train()
     elif MODE == "recognize":
-    # Для тестирования при локальном запуске
-    recognizer = FormulaRecognizer("model/crnn_model.pth")
-    # Проверка на существование тестового файла
-    test_image = "test_formula.png"
-    if os.path.exists(test_image):
-        result = recognizer.recognize(test_image)
-        print("Test result:", result)
-    else:
-        print(f"{test_image} not found")
+        print(f"Запуск сервера распознавания формул на устройстве: {DEVICE}")
+        app.run(host='0.0.0.0', port=5000)
