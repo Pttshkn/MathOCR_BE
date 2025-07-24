@@ -383,6 +383,10 @@ class FormulaRecognizer:
         return pred_str if pred_str else "<Пустое предсказание>"
 
 if __name__ == "__main__":
+    MODE = "recognize"  # Или "train"
+    if MODE == "train":
+        train()
+    elif MODE == "recognize":
     # Для тестирования при локальном запуске
     recognizer = FormulaRecognizer("model/crnn_model.pth")
     # Проверка на существование тестового файла
@@ -391,4 +395,4 @@ if __name__ == "__main__":
         result = recognizer.recognize(test_image)
         print("Test result:", result)
     else:
-        print(f"Test image {test_image} not found")
+        print(f"{test_image} not found")
