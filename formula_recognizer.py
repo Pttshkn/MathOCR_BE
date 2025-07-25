@@ -367,7 +367,7 @@ class FormulaRecognizer:
         checkpoint = torch.load(model_path, map_location=DEVICE)
         self.char_set = checkpoint['char_set']
         self.model = CRNN(len(self.char_set)).to(DEVICE)
-        self.model.load_state_dict(checkpoint['state_dict'])
+        self.model.load_state_dict(torch.load(MODEL_PATH))
         self.model.eval()
 
     def recognize(self, img_array):
