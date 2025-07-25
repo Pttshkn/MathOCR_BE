@@ -11,7 +11,8 @@ if __name__ == "__main__":
     app.run(host='0.0.0.0', port=port)
 
 # Инициализация модели
-MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'model', 'crnn_model.pth')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, 'crnn_model.pth')
 recognizer = FormulaRecognizer("model/crnn_model.pth")
 
 @app.route('/')
