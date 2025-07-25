@@ -370,11 +370,13 @@ class FormulaRecognizer:
         self.model.load_state_dict(checkpoint['state_dict'])
         self.model.eval()
 
-    def recognize(self, image_path):
+    def recognize(self, img_array):
         try:
-            img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-            if img is None:
-                return "Ошибка загрузки изображения"
+            # Конвертация цветного изображения в grayscale
+            if len(img_array.shape) == 3:
+                img = cv2.cvtColor(img_array, cv2.COLOR_BGR2GRAY)
+            else:
+                img = img_array
             
             # Бинаризация и нормализация
             _, binary = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
@@ -387,9 +389,9 @@ class FormulaRecognizer:
                 probs = outputs.log_softmax(2).exp()
                 _, preds = torch.max(probs, 2)
                 pred_str = ''.join([self.char_set[i] for i in preds[0].cpu().numpy() 
-                                  if i != len(self.char_set)-1])
+                                if i != len(self.char_set)-1])
                 pred_str = ''.join([c for i,c in enumerate(pred_str) 
-                                  if i==0 or c!=pred_str[i-1]])
+                                if i==0 or c!=pred_str[i-1]])
             
             return pred_str if pred_str else "<Пустое предсказание>"
         except Exception as e:
