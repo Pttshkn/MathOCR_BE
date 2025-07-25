@@ -1,4 +1,3 @@
-import sys
 import os
 import cv2
 import numpy as np
@@ -10,90 +9,63 @@ from torchvision import transforms
 from PIL import Image, ImageDraw
 import xml.etree.ElementTree as ET
 from tqdm import tqdm
-from flask import Flask, request, jsonify
-from flask_cors import CORS
 import io
 
-# Для корректного импорта в облачной среде
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-# Конфигурация
-DATASET_ROOT = "Dataset"
-MODEL_PATH = "crnn_model.pth"
+# Абсолютные пути
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATASET_ROOT = os.path.join(BASE_DIR, "Dataset")
+MODEL_PATH = os.path.join(BASE_DIR, "crnn_model.pth")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Инициализация Flask приложения
-app = Flask(__name__)
-CORS(app)  # Разрешить кросс-доменные запросы
+class FormulaRecognizer:
+    def __init__(self, model_path):
+        # Проверка существования файла
+        if not os.path.exists(model_path):
+            raise FileNotFoundError(f"Model file not found: {model_path}")
+        
+        checkpoint = torch.load(model_path, map_location=DEVICE)
+        self.char_set = checkpoint['char_set']
+        self.model = CRNN(len(self.char_set)).to(DEVICE)
+        self.model.load_state_dict(checkpoint['state_dict'])  # Исправлено
+        self.model.eval()
+        self.DEVICE = DEVICE
+        
+        # Трансформы для распознавания
+        self.transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((64, 256)),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,))
+        ])
 
-# Ограничение размера загружаемых файлов (2MB)
-app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024
-
-def parse_inkml(inkml_path):
-    """Загрузка и парсинг INKML файла с расширенными проверками"""
-    try:
-        tree = ET.parse(inkml_path)
-        root = tree.getroot()
-        
-        # Извлечение метки
-        label = ""
-        for annotation in root.findall("{http://www.w3.org/2003/InkML}annotation"):
-            if annotation.get("type") == "truth":
-                label = annotation.text.strip()
-                break
-        
-        if not label:
-            raise ValueError(f"Пустая метка в файле {inkml_path}")
-        
-        # Отрисовка штрихов
-        strokes = []
-        for trace in root.findall("{http://www.w3.org/2003/InkML}trace"):
-            points = []
-            for coord in trace.text.strip().split(','):
-                try:
-                    x, y = map(float, coord.strip().split()[:2])
-                    points.append((x, y))
-                except:
-                    continue
-            if len(points) > 1:
-                strokes.append(points)
-        
-        if not strokes:
-            raise ValueError(f"Нет валидных штрихов в файле {inkml_path}")
-        
-        # Нормализация координат
-        all_points = [p for stroke in strokes for p in stroke]
-        min_x, max_x = min(p[0] for p in all_points), max(p[0] for p in all_points)
-        min_y, max_y = min(p[1] for p in all_points), max(p[1] for p in all_points)
-        
-        width = int(max_x - min_x + 20)
-        height = int(max_y - min_y + 20)
-        
-        # Гарантированный минимальный размер
-        width = max(width, 32)
-        height = max(height, 32)
-        
-        img = Image.new('L', (width, height), 255)
-        draw = ImageDraw.Draw(img)
-        for stroke in strokes:
-            adjusted = [(x-min_x+10, y-min_y+10) for x, y in stroke]
-            draw.line(adjusted, fill=0, width=2)
-        
-        return np.array(img), label
-    
-    except Exception as e:
-        print(f"Ошибка при обработке {inkml_path}: {str(e)}")
-        return None, None
-
-def load_dataset(data_dir):
-    """Загрузка набора данных с расширенной валидацией"""
-    data = []
-    for filename in tqdm(os.listdir(data_dir), desc="Загрузка данных"):
-        if filename.endswith(".inkml"):
-            img, label = parse_inkml(os.path.join(data_dir, filename))
-            if img is not None and label is not None:
-                data.append((img, label))
-    return data
+    def recognize(self, img_array):
+        try:
+            # Конвертация в grayscale
+            if len(img_array.shape) == 3:
+                img = cv2.cvtColor(img_array, cv2.COLOR_BGR2GRAY)
+            else:
+                img = img_array
+            
+            # Бинаризация
+            _, binary = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+            
+            # Применение трансформов
+            img_tensor = self.transform(binary).unsqueeze(0).to(DEVICE)
+            
+            # Подача в модель
+            with torch.no_grad():
+                outputs = self.model(img_tensor)
+                probs = outputs.log_softmax(2).exp()
+                _, preds = torch.max(probs, 2)
+                preds = preds.squeeze(1).cpu().numpy()
+                
+                # Декодирование
+                pred_str = ''.join([self.char_set[i] for i in preds if i != len(self.char_set)-1])
+                pred_str = ''.join([c for i, c in enumerate(pred_str) if i == 0 or c != pred_str[i-1]])
+            
+            return pred_str if pred_str else "<Пустое предсказание>"
+        except Exception as e:
+            return f"Ошибка распознавания: {str(e)}"
 
 class CRNN(nn.Module):
     def __init__(self, num_chars):
