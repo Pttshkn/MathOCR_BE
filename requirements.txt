@@ -1,8 +1,8 @@
-flask==2.3.2
+opencv-python==4.9.0.80
+numpy==1.26.4
 torch==2.7.1
 torchvision==0.22.1
-opencv-python-headless==4.7.0.72
-opencv-contrib-python-headless==4.7.0.72
-Pillow==9.5.0
-numpy==1.24.3
-gunicorn==20.1.0
+Pillow==10.2.0
+tqdm==4.66.2
+flask==3.0.2
+flask-cors==4.0.0
