@@ -3,12 +3,12 @@ import uuid
 from flask import Flask, request, jsonify
 from formula_recognizer import FormulaRecognizer
 
+app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # Ограничение 5MB
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
-
-app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # Ограничение 5MB
 
 # Инициализация модели
 MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'model', 'crnn_model.pth')
