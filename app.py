@@ -3,6 +3,10 @@ import uuid
 from flask import Flask, request, jsonify
 from formula_recognizer import FormulaRecognizer
 
+if name == "main":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
+
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # Ограничение 5MB
 
@@ -54,6 +58,3 @@ def recognize_formula():
         # Удаляем временный файл
         if os.path.exists(temp_path):
             os.remove(temp_path)
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
