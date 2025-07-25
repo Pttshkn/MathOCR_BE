@@ -1,5 +1,6 @@
 flask==2.3.2
-torch==2.7.1
+torch==2.2.2
+torchvision==0.17
 opencv-python-headless==4.7.0.72
 opencv-contrib-python-headless==4.7.0.72
 Pillow==9.5.0
