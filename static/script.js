@@ -213,7 +213,7 @@ document.getElementById('recognize-btn').addEventListener('click', async functio
         }
 
         // Отправляем запрос на бэкенд
-        const response = await fetch('http://localhost:5000/recognize', {
+        const response = await fetch('https://mathocr-backend.onrender.com/recognize', {
             method: 'POST',
             body: formData
         });
