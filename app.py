@@ -1,19 +1,25 @@
 import os
 import uuid
-from flask import Flask, request, jsonify
+import cv2
+import numpy as np
+from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
 from formula_recognizer import FormulaRecognizer
 
+# Конфигурация
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, 'crnn_model.pth')
+
 app = Flask(__name__)
+CORS(app)
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # Ограничение 5MB
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
 
-# Инициализация модели
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, 'crnn_model.pth')
-recognizer = FormulaRecognizer("model/crnn_model.pth")
+# Ленивая инициализация модели
+recognizer = None
 
 @app.route('/')
 def home():
@@ -21,31 +27,30 @@ def home():
 
 @app.route('/recognize', methods=['POST'])
 def recognize_formula():
-    # Проверка наличия файла
+    global recognizer
+    if not recognizer:
+        recognizer = FormulaRecognizer(MODEL_PATH)
+    
     if 'file' not in request.files:
         return jsonify({"error": "Файл не найден в запросе"}), 400
     
     file = request.files['file']
     
-    # Проверка имени файла
     if file.filename == '':
         return jsonify({"error": "Не выбран файл"}), 400
     
-    # Проверка расширения файла
     allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
     if '.' not in file.filename or file.filename.split('.')[-1].lower() not in allowed_extensions:
         return jsonify({"error": "Неподдерживаемый формат файла"}), 400
 
     try:
-        # Генерируем уникальное имя файла
-        temp_filename = f"temp_{uuid.uuid4().hex}.png"
-        temp_path = os.path.join('/tmp', temp_filename)
+        # Чтение изображения в память
+        img_bytes = file.read()
+        nparr = np.frombuffer(img_bytes, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         
-        # Сохраняем файл
-        file.save(temp_path)
-        
-        # Распознаем формулу
-        latex_result = recognizer.recognize(temp_path)
+        # Распознавание
+        latex_result = recognizer.recognize(img)
         
         return jsonify({
             "result": latex_result,
@@ -56,7 +61,10 @@ def recognize_formula():
             "error": f"Ошибка обработки: {str(e)}",
             "type": type(e).__name__
         }), 500
-    finally:
-        # Удаляем временный файл
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({
+        "status": "active",
+        "device": str(recognizer.DEVICE) if recognizer else "Not initialized"
+    })
