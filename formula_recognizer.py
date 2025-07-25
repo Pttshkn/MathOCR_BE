@@ -370,14 +370,15 @@ class FormulaRecognizer:
         self.model.load_state_dict(checkpoint['state_dict'])
         self.model.eval()
 
-        def recognize(self, image_path):
-        img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-        if img is None:
-            return "Ошибка загрузки изображения"
+    def recognize(self, image_path):
+        try:
+            img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+            if img is None:
+                return "Ошибка загрузки изображения"
             
             # Бинаризация и нормализация
-            _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-            img_tensor = torch.from_numpy(binary.astype(np.float32) / 255.0
+            _, binary = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+            img_tensor = torch.from_numpy(binary.astype(np.float32) / 255.0)
             img_tensor = (img_tensor.unsqueeze(0).unsqueeze(0) - 0.5) / 0.5
             
             # Подаем в модель
@@ -391,13 +392,17 @@ class FormulaRecognizer:
                                   if i==0 or c!=pred_str[i-1]])
             
             return pred_str if pred_str else "<Пустое предсказание>"
-        
         except Exception as e:
             print(f"Ошибка распознавания: {str(e)}")
             return f"Ошибка: {str(e)}"
 
 # Инициализация распознавателя при запуске
 recognizer = FormulaRecognizer(MODEL_PATH)
+
+def allowed_file(filename):
+    """Проверка допустимого расширения файла"""
+    allowed_extensions = {'png', 'jpg', 'jpeg'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
 @app.route('/recognize', methods=['POST'])
 def handle_recognize():
