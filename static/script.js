@@ -148,6 +148,43 @@ document.getElementById('copy-btn').addEventListener('click', function() {
 });
 
 // ======= Распознавание формулы =======
+// document.getElementById('recognize-btn').addEventListener('click', async function() {
+//     if (!preview.src || imageContainer.style.display === 'none') {
+//         errorMessage.textContent = '❌ Пожалуйста, загрузите изображение';
+//         errorMessage.style.display = 'block';
+//         return;
+//     }
+    
+//     if (recognizeBtn.disabled) {
+//         return;
+//     }
+
+//     // Показываем лоадер
+//     this.innerHTML = '<div class="loader"></div> Обработка...';
+//     this.disabled = true;
+
+//     try {
+//         // Здесь будет реальный запрос к API
+//         // const response = await fetch('API_URL', { method: 'POST', body: formData });
+//         // const result = await response.json();
+        
+//         // Имитация задержки для демонстрации
+//         await new Promise(resolve => setTimeout(resolve, 1500));
+        
+//         // В реальном коде используйте результат из API:
+//         // document.getElementById('result').textContent = `$${result.latex}$`;
+//         // MathJax.typeset();
+        
+//         alert('Функция распознавания будет реализована в бэкенде');
+//     } catch (error) {
+//         errorMessage.textContent = '❌ Ошибка при распознавании';
+//         errorMessage.style.display = 'block';
+//     } finally {
+//         this.innerHTML = '<i class="fas fa-robot"></i> Распознать';
+//         this.disabled = false;
+//     }
+// });
+// ======= Распознавание формулы =======
 document.getElementById('recognize-btn').addEventListener('click', async function() {
     if (!preview.src || imageContainer.style.display === 'none') {
         errorMessage.textContent = '❌ Пожалуйста, загрузите изображение';
@@ -160,37 +197,43 @@ document.getElementById('recognize-btn').addEventListener('click', async functio
     }
 
     // Показываем лоадер
-    this.innerHTML = '<div class="loader"></div> Обработка...';
-    this.disabled = true;
-    errorMessage.style.display = 'none';  // Скрываем предыдущие ошибки
+    const recognizeBtn = this;
+    recognizeBtn.innerHTML = '<div class="loader"></div> Обработка...';
+    recognizeBtn.disabled = true;
 
     try {
-        // Создаем форму для отправки
+        // Создаем FormData и добавляем файл
         const formData = new FormData();
-        formData.append('file', fileUpload.files[0]);
-        
-        // Отправляем на сервер
-        const response = await fetch('https://mathocr-backend.onrender.com/recognize', {
+        if (fileUpload.files[0]) {
+            formData.append('file', fileUpload.files[0]);
+        } else {
+            // Если файл был загружен через drag-and-drop
+            const blob = await fetch(preview.src).then(r => r.blob());
+            formData.append('file', blob, 'image.png');
+        }
+
+        // Отправляем запрос на бэкенд
+        const response = await fetch('http://localhost:5000/recognize', {
             method: 'POST',
             body: formData
         });
-        
-        const data = await response.json();
-        
-        if (data.error) {
-            throw new Error(data.error);
+
+        const result = await response.json();
+
+        if (response.ok) {
+            // Успешное распознавание
+            document.getElementById('result').textContent = `$${result.result}$`;
+            // Обновляем рендер MathJax
+            MathJax.typeset();
+        } else {
+            // Ошибка от сервера
+            throw new Error(result.error || 'Неизвестная ошибка сервера');
         }
-        
-        // Показываем результат
-        document.getElementById('result').textContent = data.result;
-        
-        // Обновляем MathJax для отображения формулы
-        MathJax.typeset();
     } catch (error) {
-        errorMessage.textContent = '❌ ' + error.message;
+        errorMessage.textContent = `❌ ${error.message}`;
         errorMessage.style.display = 'block';
     } finally {
-        this.innerHTML = '<i class="fas fa-robot"></i> Распознать';
-        this.disabled = false;
+        recognizeBtn.innerHTML = '<i class="fas fa-robot"></i> Распознать';
+        recognizeBtn.disabled = false;
     }
 });
